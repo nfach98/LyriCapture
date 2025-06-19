@@ -31,7 +31,8 @@ dependencies:
   flutter:
     sdk: flutter
   provider: ^6.1.5
-  http: ^1.4.0
+  # http: ^1.4.0 # Removing http
+  dio: ^5.8.0+1 # Adding dio
   screenshot: ^2.1.0
   image_gallery_saver: ^2.0.3
   path_provider: ^2.1.1

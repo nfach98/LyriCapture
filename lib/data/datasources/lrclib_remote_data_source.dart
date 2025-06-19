@@ -1,12 +1,14 @@
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:injectable/injectable.dart'; // Added injectable
 import 'package:lyricapture/data/models/lyrics_model.dart';
 
 abstract class LrcLibRemoteDataSource {
   Future<LyricsModel> getLyrics(String trackName, String artistName);
 }
 
+@LazySingleton(as: LrcLibRemoteDataSource) // Added annotation
 class LrcLibRemoteDataSourceImpl implements LrcLibRemoteDataSource {
   final Dio _dio;
   // final String _lrcLibApiBaseUrl = 'https://lrclib.net/api'; // Not strictly needed if full URL used

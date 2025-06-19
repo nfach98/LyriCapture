@@ -1,7 +1,9 @@
+import 'dart:typed_data'; // Required for Uint8List
+
 abstract class ImageCaptureRepository {
-  Future<String> captureLyricsToImage(String lyricsText, {
-    String? songTitle,
-    String? artistName,
-    // TODO: Add other styling parameters as needed
-  });
+  // Changed to accept image bytes and a filename
+  Future<String> saveCapturedImage(Uint8List imageBytes, String fileName);
+
+  // Added a method for sharing
+  Future<void> shareImage(String imagePath, String text);
 }

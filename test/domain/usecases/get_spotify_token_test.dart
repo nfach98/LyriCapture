@@ -10,7 +10,7 @@ void main() {
 
   setUp(() {
     mockSpotifyRepository = MockSpotifyRepository();
-    usecase = GetSpotifyToken();
+    usecase = GetSpotifyToken(mockSpotifyRepository); // Pass mock in constructor
   });
 
   final tSpotifyToken = SpotifyToken(accessToken: 'test_token', tokenType: 'Bearer', expiresIn: 3600);
@@ -19,7 +19,7 @@ void main() {
     // Arrange
     when(mockSpotifyRepository.getToken()).thenAnswer((_) async => tSpotifyToken);
     // Act
-    final result = await usecase.call(mockSpotifyRepository);
+    final result = await usecase.call(); // No repository argument in call()
     // Assert
     expect(result, tSpotifyToken);
     verify(mockSpotifyRepository.getToken());

@@ -2,22 +2,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:lyricapture/presentation/providers/lyrics_provider.dart';
 import 'package:lyricapture/domain/usecases/get_lyrics_from_lrclib.dart';
+import 'package:lyricapture/domain/usecases/capture_lyrics_to_image.dart'; // Import new use case
 import 'package:lyricapture/domain/entities/lyrics.dart';
-import '../../mocks.mocks.dart';
+import '../../mocks.mocks.dart'; // Should contain MockGetLyricsFromLrclib and MockCaptureLyricsToImage
 
 void main() {
   late LyricsProvider provider;
-  late MockLyricsRepository mockLyricsRepository;
-  late GetLyricsFromLrclib getLyricsFromLrclib;
+  late MockGetLyricsFromLrclib mockGetLyricsFromLrclib; // Mock the use case
+  late MockCaptureLyricsToImage mockCaptureLyricsToImage; // Mock the use case
+  // MockLyricsRepository not directly needed if use cases are mocked
 
   setUp(() {
-    mockLyricsRepository = MockLyricsRepository();
-    // The use case is instantiated directly, it will call the mocked repository
-    getLyricsFromLrclib = GetLyricsFromLrclib();
+    mockGetLyricsFromLrclib = MockGetLyricsFromLrclib();
+    mockCaptureLyricsToImage = MockCaptureLyricsToImage();
 
     provider = LyricsProvider(
-      getLyricsFromLrclib: getLyricsFromLrclib,
-      lyricsRepository: mockLyricsRepository,
+      getLyricsFromLrclib: mockGetLyricsFromLrclib, // Pass mocked use case
+      captureLyricsToImage: mockCaptureLyricsToImage, // Pass mocked use case
+      // lyricsRepository: mockLyricsRepository, // Removed
     );
   });
 
@@ -27,8 +29,11 @@ void main() {
     artistName: 'Test Artist',
     albumName: 'Test Album',
     plainLyrics: 'Hello world',
-    syncedLyrics: null, // Or some test data
+    syncedLyrics: null,
   );
+
+  const tTrackName = 'Test Song';
+  const tArtistName = 'Test Artist';
 
   test('initial state is correct', () {
     expect(provider.isLoading, false);
@@ -38,45 +43,44 @@ void main() {
   });
 
   group('fetchLyrics', () {
-    test('should get lyrics using the use case and repository', () async {
+    test('should get lyrics using the GetLyricsFromLrclib use case', () async {
       // Arrange
-      when(mockLyricsRepository.getLyrics('Test Song', 'Test Artist'))
+      when(mockGetLyricsFromLrclib.call(tTrackName, tArtistName))
           .thenAnswer((_) async => tLyrics);
 
       // Act
-      await provider.fetchLyrics('Test Song', 'Test Artist');
+      await provider.fetchLyrics(tTrackName, tArtistName);
 
       // Assert
       expect(provider.lyrics, tLyrics);
       expect(provider.isLoading, false);
       expect(provider.error, null);
-      // Verify that the repository's getLyrics method was called via the use case
-      verify(mockLyricsRepository.getLyrics('Test Song', 'Test Artist')).called(1);
-      verifyNoMoreInteractions(mockLyricsRepository);
+      verify(mockGetLyricsFromLrclib.call(tTrackName, tArtistName)).called(1);
+      verifyNoMoreInteractions(mockGetLyricsFromLrclib);
     });
 
-    test('should set error when use case (via repository) fails', () async {
+    test('should set error when GetLyricsFromLrclib use case fails', () async {
       // Arrange
-      when(mockLyricsRepository.getLyrics('Test Song', 'Test Artist'))
+      when(mockGetLyricsFromLrclib.call(tTrackName, tArtistName))
           .thenThrow(Exception('Failed to fetch lyrics'));
 
       // Act
-      await provider.fetchLyrics('Test Song', 'Test Artist');
+      await provider.fetchLyrics(tTrackName, tArtistName);
 
       // Assert
       expect(provider.lyrics, null);
       expect(provider.isLoading, false);
       expect(provider.error, isNotNull);
       expect(provider.error, 'Failed to fetch lyrics: Exception: Failed to fetch lyrics');
-      verify(mockLyricsRepository.getLyrics('Test Song', 'Test Artist')).called(1);
-      verifyNoMoreInteractions(mockLyricsRepository);
+      verify(mockGetLyricsFromLrclib.call(tTrackName, tArtistName)).called(1);
+      verifyNoMoreInteractions(mockGetLyricsFromLrclib);
     });
 
      test('should clear selected lyrics when fetching new lyrics', () async {
       // Arrange
       provider.toggleLyricLineSelection("some old selected line");
       expect(provider.selectedLyricsLines.isNotEmpty, true);
-      when(mockLyricsRepository.getLyrics(any, any)).thenAnswer((_) async => tLyrics);
+      when(mockGetLyricsFromLrclib.call(any, any)).thenAnswer((_) async => tLyrics);
 
       // Act
       await provider.fetchLyrics('New Song', 'New Artist');

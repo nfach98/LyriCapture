@@ -18,7 +18,8 @@ import 'package:lyricapture/domain/usecases/get_lyrics_from_lrclib.dart';
 
 import 'package:lyricapture/presentation/providers/song_search_provider.dart';
 import 'package:lyricapture/presentation/providers/lyrics_provider.dart';
-import 'package:lyricapture/presentation/screens/search_screen.dart';
+// import 'package:lyricapture/presentation/screens/search_screen.dart'; // No longer needed for home
+import 'package:lyricapture/presentation/navigation/app_router.dart'; // Import AppRouter
 
 void main() {
   // Instantiate HTTP client
@@ -98,13 +99,13 @@ class MyApp extends StatelessWidget {
         //   ),
         // ),
       ],
-      child: MaterialApp(
+      child: MaterialApp.router(
         title: 'Lyricapture',
         theme: ThemeData(
           primarySwatch: Colors.blue,
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        home: const SongSearchScreen(),
+        routerConfig: AppRouter.router, // Use routerConfig
       ),
     );
   }

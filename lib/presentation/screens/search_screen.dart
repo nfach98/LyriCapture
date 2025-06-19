@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart'; // Added go_router
 import 'package:lyricapture/presentation/providers/song_search_provider.dart';
-import 'package:lyricapture/presentation/screens/lyrics_screen.dart';
+// import 'package:lyricapture/presentation/screens/lyrics_screen.dart'; // No longer directly needed for Navigator.push
 import 'package:provider/provider.dart';
 import 'package:lyricapture/domain/entities/song.dart';
 
@@ -74,12 +75,8 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
                       title: Text(song.name),
                       subtitle: Text('${song.artistName} - ${song.albumName}'),
                       onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => LyricsScreen(song: song),
-                          ),
-                        );
+                        // Navigate using go_router, passing the song object as 'extra'
+                        context.push('/lyrics', extra: song);
                       },
                     );
                   },

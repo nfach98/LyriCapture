@@ -1,19 +1,15 @@
 import 'package:flutter/foundation.dart';
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:lyricapture/domain/entities/lyrics.dart';
 import 'package:lyricapture/domain/usecases/get_lyrics_from_lrclib.dart';
 import 'package:lyricapture/domain/repositories/lyrics_repository.dart';
-import 'package:screenshot/screenshot.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
-import 'package:share_plus/share_plus.dart';
+// import 'package:screenshot/screenshot.dart';
+// import 'package:share_plus/share_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class LyricsProvider extends ChangeNotifier {
   final GetLyricsFromLrclib getLyricsFromLrclib;
   final LyricsRepository lyricsRepository; // Needed to pass to use case
-  ScreenshotController screenshotController = ScreenshotController();
+  // ScreenshotController screenshotController = ScreenshotController();
 
   bool _isLoading = false;
   Lyrics? _lyrics;
@@ -28,8 +24,10 @@ class LyricsProvider extends ChangeNotifier {
   bool get isLoading => _isLoading;
   Lyrics? get lyrics => _lyrics;
   String? get error => _error;
-  Set<String> get selectedLyricsLines => _selectedLyricsLines; // Getter for selected lines
-  String get selectedLyricsText => _selectedLyricsLines.join('\n'); // Getter for combined text
+  Set<String> get selectedLyricsLines =>
+      _selectedLyricsLines; // Getter for selected lines
+  String get selectedLyricsText =>
+      _selectedLyricsLines.join('\n'); // Getter for combined text
 
   void toggleLyricLineSelection(String line) {
     if (_selectedLyricsLines.contains(line)) {
@@ -59,7 +57,8 @@ class LyricsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final result = await getLyricsFromLrclib.call(lyricsRepository, trackName, artistName);
+      final result = await getLyricsFromLrclib.call(
+          lyricsRepository, trackName, artistName);
       if (result.plainLyrics == null && result.syncedLyrics == null) {
         _lyrics = null; // Explicitly set to null if no lyrics content
         _error = "No lyrics found for this track.";
@@ -74,7 +73,8 @@ class LyricsProvider extends ChangeNotifier {
     }
   }
 
-  Future<String?> captureAndSaveLyrics(String songTitle, String artistName) async {
+  Future<String?> captureAndSaveLyrics(
+      String songTitle, String artistName) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -91,22 +91,21 @@ class LyricsProvider extends ChangeNotifier {
     // For iOS, PHPhotoLibraryAddUsageDescription.
     // permission_handler usually abstracts this well.
     if (defaultTargetPlatform == TargetPlatform.android) {
-        status = await Permission.storage.request();
-        // For Android 13+ (API 33+), if targeting higher SDKs, READ_MEDIA_IMAGES might be needed
-        // if ImageGallerySaver doesn't handle it. But typically storage permission is enough for saving.
-        // If issues arise, specific media permissions might be needed.
+      status = await Permission.storage.request();
+      // For Android 13+ (API 33+), if targeting higher SDKs, READ_MEDIA_IMAGES might be needed
+      // if ImageGallerySaver doesn't handle it. But typically storage permission is enough for saving.
+      // If issues arise, specific media permissions might be needed.
     } else if (defaultTargetPlatform == TargetPlatform.iOS) {
-        status = await Permission.photos.request(); // Covers saving to gallery
+      status = await Permission.photos.request(); // Covers saving to gallery
     } else {
-        // Handle other platforms or return error if not supported
-        _error = "Platform not supported for image saving.";
-        _isLoading = false;
-        notifyListeners();
-        return null;
+      // Handle other platforms or return error if not supported
+      _error = "Platform not supported for image saving.";
+      _isLoading = false;
+      notifyListeners();
+      return null;
     }
 
-
-    if (status.isGranted) {
+    /* if (status.isGranted) {
       try {
         // Capture the image from the Screenshot widget's child
         final Uint8List? imageBytes = await screenshotController.capture();
@@ -145,7 +144,7 @@ class LyricsProvider extends ChangeNotifier {
       }
     } else {
       _error = 'Storage/Photos permission denied. Status: $status';
-    }
+    } */
 
     _isLoading = false;
     notifyListeners();

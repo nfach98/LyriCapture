@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart'; // Added go_router
+import 'package:go_router/go_router.dart';
+import 'package:lyricapture/presentation/navigation/app_router.dart';
 import 'package:lyricapture/presentation/providers/song_search_provider.dart';
-// import 'package:lyricapture/presentation/screens/lyrics_screen.dart'; // No longer directly needed for Navigator.push
 import 'package:provider/provider.dart';
-import 'package:lyricapture/domain/entities/song.dart';
 
 class SongSearchScreen extends StatefulWidget {
   const SongSearchScreen({super.key});
@@ -32,17 +31,18 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.search),
                   onPressed: () {
-                    final query = _searchController.text;
-                    if (query.isNotEmpty) {
-                      context.read<SongSearchProvider>().search(query);
-                    }
+                    // final query = _searchController.text;
+                    // if (query.isNotEmpty) {
+                    //   context.read<SongSearchProvider>().search(query);
+                    // }
+                    context.pushNamed(AppRouter.lyrics);
                   },
                 ),
               ),
               onSubmitted: (query) {
-                 if (query.isNotEmpty) {
-                    context.read<SongSearchProvider>().search(query);
-                  }
+                if (query.isNotEmpty) {
+                  context.read<SongSearchProvider>().search(query);
+                }
               },
             ),
           ),
@@ -70,7 +70,8 @@ class _SongSearchScreenState extends State<SongSearchScreen> {
                     final song = provider.songs[index];
                     return ListTile(
                       leading: song.albumArtUrl != null
-                          ? Image.network(song.albumArtUrl!, width: 50, height: 50, fit: BoxFit.cover)
+                          ? Image.network(song.albumArtUrl!,
+                              width: 50, height: 50, fit: BoxFit.cover)
                           : const Icon(Icons.music_note, size: 50),
                       title: Text(song.name),
                       subtitle: Text('${song.artistName} - ${song.albumName}'),

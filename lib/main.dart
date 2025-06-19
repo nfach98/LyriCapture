@@ -1,92 +1,57 @@
-import 'package:dio/dio.dart'; // Import Dio
+// import 'package:dio/dio.dart'; // No longer directly needed here
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// import 'package:http/http.dart' as http; // No longer needed
 
-import 'package:lyricapture/data/network/dio_client.dart'; // Import DioClient
-import 'package:lyricapture/data/datasources/spotify_remote_data_source.dart';
-import 'package:lyricapture/data/datasources/lrclib_remote_data_source.dart';
-import 'package:lyricapture/data/repositories/spotify_repository_impl.dart';
-import 'package:lyricapture/data/repositories/lyrics_repository_impl.dart';
+// import 'package:lyricapture/data/network/dio_client.dart'; // No longer needed
+// import 'package:lyricapture/data/datasources/spotify_remote_data_source.dart'; // No longer needed
+// import 'package:lyricapture/data/datasources/lrclib_remote_data_source.dart'; // No longer needed
+// import 'package:lyricapture/data/repositories/spotify_repository_impl.dart'; // No longer needed
+// import 'package:lyricapture/data/repositories/lyrics_repository_impl.dart'; // No longer needed
 // Import ImageCaptureRepository if you were to implement its provider/usecase
 // import 'package:lyricapture/data/repositories/image_capture_repository_impl.dart';
 
 
-import 'package:lyricapture/domain/usecases/get_spotify_token.dart';
-import 'package:lyricapture/domain/usecases/search_song_on_spotify.dart';
-import 'package:lyricapture/domain/usecases/get_lyrics_from_lrclib.dart';
+// import 'package:lyricapture/domain/usecases/get_spotify_token.dart'; // No longer needed
+// import 'package:lyricapture/domain/usecases/search_song_on_spotify.dart'; // No longer needed
+// import 'package:lyricapture/domain/usecases/get_lyrics_from_lrclib.dart'; // No longer needed
 // Import CaptureLyricsToImage if you were to implement its provider/usecase
 // import 'package:lyricapture/domain/usecases/capture_lyrics_to_image.dart';
 
 import 'package:lyricapture/presentation/providers/song_search_provider.dart';
 import 'package:lyricapture/presentation/providers/lyrics_provider.dart';
-// import 'package:lyricapture/presentation/screens/search_screen.dart'; // No longer needed for home
 import 'package:lyricapture/presentation/navigation/app_router.dart'; // Import AppRouter
+import 'package:lyricapture/injection.dart'; // Import DI setup
 
-void main() {
-  // Initialize DioClient
-  final DioClient dioClient = DioClient();
-  final Dio dioInstance = dioClient.dio; // Get the Dio instance
+Future<void> main() async { // Make main async
+  WidgetsFlutterBinding.ensureInitialized(); // Ensure Flutter bindings are initialized
+  await configureDependencies(); // Call your DI setup
 
-  // Data Layer Instances
-  final spotifyRemoteDataSource = SpotifyRemoteDataSourceImpl(dio: dioInstance); // Pass Dio instance
-  final lrcLibRemoteDataSource = LrcLibRemoteDataSourceImpl(dio: dioInstance);   // Pass Dio instance
-  // final imageCaptureLocalDataSource = ImageCaptureLocalDataSourceImpl(); // Example if it existed
-
-  final spotifyRepository = SpotifyRepositoryImpl(remoteDataSource: spotifyRemoteDataSource);
-  final lyricsRepository = LyricsRepositoryImpl(remoteDataSource: lrcLibRemoteDataSource);
-  // final imageCaptureRepository = ImageCaptureRepositoryImpl(localDataSource: imageCaptureLocalDataSource); // Example
-
-  // Domain Layer Instances (Use Cases)
-  // These are typically simple classes, so direct instantiation is fine.
-  // For more complex scenarios, a dependency injection solution might be used for use cases too.
-  final getSpotifyTokenUseCase = GetSpotifyToken();
-  final searchSongOnSpotifyUseCase = SearchSongOnSpotify();
-  final getLyricsFromLrclibUseCase = GetLyricsFromLrclib();
-  // final captureLyricsToImageUseCase = CaptureLyricsToImage(); // Example
+  // Manual instantiations removed, GetIt will handle them.
 
   runApp(
     MultiProvider(
       providers: [
         ChangeNotifierProvider(
-          create: (_) => SongSearchProvider(
-            getSpotifyToken: getSpotifyTokenUseCase,
-            searchSongOnSpotify: searchSongOnSpotifyUseCase,
-            spotifyRepository: spotifyRepository,
-          ),
+          create: (_) => getIt<SongSearchProvider>(), // Get from GetIt
         ),
         ChangeNotifierProvider(
-          create: (_) => LyricsProvider(
-            getLyricsFromLrclib: getLyricsFromLrclibUseCase,
-            lyricsRepository: lyricsRepository,
-            // imageCaptureRepository: imageCaptureRepository, // Example
-            // captureLyricsToImage: captureLyricsToImageUseCase, // Example
-          ),
+          create: (_) => getIt<LyricsProvider>(), // Get from GetIt
         ),
-        // Provider for ImageCapture if implemented
+        // Provider for ImageCapture if implemented and made injectable
         // ChangeNotifierProvider(
-        //   create: (_) => ImageCaptureProvider(
-        //     captureLyricsToImage: captureLyricsToImageUseCase,
-        //     imageCaptureRepository: imageCaptureRepository,
-        //   ),
+        //   create: (_) => getIt<ImageCaptureProvider>(),
         // ),
       ],
       child: MaterialApp.router(
         title: 'Lyricapture',
         theme: ThemeData(
-          // Using a more common dark theme setup
           brightness: Brightness.dark,
-          primarySwatch: Colors.blue, // This might not have a big effect with brightness: Brightness.dark
-          // Consider using colorScheme for more detailed dark theme customization
+          primarySwatch: Colors.blue,
           colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue, brightness: Brightness.dark),
           visualDensity: VisualDensity.adaptivePlatformDensity,
         ),
-        routerConfig: AppRouter.router, // Use routerConfig
+        routerConfig: AppRouter.router,
       ),
     ),
   );
-}
-
-// MyApp widget is no longer needed as MultiProvider is at the root of runApp
-// If MyApp was doing more than just setting up MultiProvider, that logic would need to be merged here.
 }

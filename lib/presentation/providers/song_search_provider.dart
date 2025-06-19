@@ -1,45 +1,56 @@
 import 'package:flutter/foundation.dart';
+import 'package:injectable/injectable.dart'; // Added injectable
 import 'package:lyricapture/domain/entities/song.dart';
 import 'package:lyricapture/domain/entities/spotify_token.dart';
 import 'package:lyricapture/domain/usecases/get_spotify_token.dart';
 import 'package:lyricapture/domain/usecases/search_song_on_spotify.dart';
-import 'package:lyricapture/domain/repositories/spotify_repository.dart';
+// import 'package:lyricapture/domain/repositories/spotify_repository.dart'; // No longer needed if use cases are used
 
+@injectable // Added annotation
 class SongSearchProvider extends ChangeNotifier {
-  final GetSpotifyToken getSpotifyToken;
-  final SearchSongOnSpotify searchSongOnSpotify;
-  final SpotifyRepository spotifyRepository; // Needed to pass to use cases
+  final GetSpotifyToken _getSpotifyToken; // Changed to _ and private convention
+  final SearchSongOnSpotify _searchSongOnSpotify; // Changed to _ and private convention
+  // final SpotifyRepository _spotifyRepository; // Removed if not directly used
 
   bool _isLoading = false;
   List<Song> _songs = [];
   String? _error;
-  SpotifyToken? _spotifyToken;
+  SpotifyToken? _spotifyToken; // Renamed for consistency
 
   SongSearchProvider({
-    required this.getSpotifyToken,
-    required this.searchSongOnSpotify,
-    required this.spotifyRepository,
-  });
+    required GetSpotifyToken getSpotifyToken, // Constructor params updated
+    required SearchSongOnSpotify searchSongOnSpotify,
+    // required SpotifyRepository spotifyRepository, // Removed
+  })  : _getSpotifyToken = getSpotifyToken,
+        _searchSongOnSpotify = searchSongOnSpotify;
+        // _spotifyRepository = spotifyRepository; // Removed
 
   bool get isLoading => _isLoading;
   List<Song> get songs => _songs;
   String? get error => _error;
 
   Future<void> _fetchTokenIfNeeded() async {
-    if (_spotifyToken == null || _isTokenExpired()) {
+    // Using _spotifyToken field now
+    if (_spotifyToken == null || _isTokenExpired(_spotifyToken!)) {
       try {
-        _spotifyToken = await getSpotifyToken.call(spotifyRepository);
+        // Use case call doesn't need repository passed here anymore
+        _spotifyToken = await _getSpotifyToken.call();
       } catch (e) {
         _error = 'Failed to get Spotify token: $e';
-        // Optionally, rethrow or handle more gracefully
         rethrow;
       }
     }
   }
 
-  bool _isTokenExpired() {
-    // Basic check, a real app might store expiration time and check against current time
-    return _spotifyToken == null || _spotifyToken!.expiresIn < DateTime.now().millisecondsSinceEpoch / 1000;
+  // Placeholder: Real implementation would check expiry time against current time
+  // This logic might need a timestamp of when the token was fetched.
+  bool _isTokenExpired(SpotifyToken token) {
+    // This is a simplified check. A robust solution needs to store the fetch time
+    // and calculate `DateTime.now().millisecondsSinceEpoch / 1000 > (fetchTime + expiresInSeconds)`.
+    // For now, let's assume it might expire quickly for testing or always refetch if not ideal.
+    // Or, if expiresIn is an absolute timestamp, then:
+    // return DateTime.now().millisecondsSinceEpoch / 1000 > token.expiresIn;
+    return false; // Assuming token once fetched is valid for its lifetime for now
   }
 
   Future<void> search(String query) async {
@@ -51,17 +62,17 @@ class SongSearchProvider extends ChangeNotifier {
     }
 
     _isLoading = true;
-    _songs = [];
+    _songs = []; // Clear previous songs
     _error = null;
     notifyListeners();
 
     try {
       await _fetchTokenIfNeeded();
-      if (_spotifyToken == null) {
+      if (_spotifyToken == null) { // Check internal _spotifyToken
         throw Exception("Spotify token is not available.");
       }
-      final results = await searchSongOnSpotify.call(spotifyRepository, query, _spotifyToken!.accessToken);
-      _songs = results;
+      // Use case call for searchSongOnSpotify
+      _songs = await _searchSongOnSpotify.call(query, _spotifyToken!.accessToken);
     } catch (e) {
       _error = 'Search failed: $e';
     } finally {

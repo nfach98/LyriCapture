@@ -4,17 +4,17 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i9;
-import 'dart:convert' as _i17;
-import 'dart:typed_data' as _i18;
+import 'dart:convert' as _i18;
+import 'dart:typed_data' as _i13;
 
 import 'package:dio/dio.dart' as _i7;
 import 'package:http/http.dart' as _i6;
 import 'package:lyricapture/data/datasources/lrclib_remote_data_source.dart'
-    as _i16;
+    as _i17;
 import 'package:lyricapture/data/datasources/spotify_remote_data_source.dart'
-    as _i14;
+    as _i15;
 import 'package:lyricapture/data/models/lyrics_model.dart' as _i5;
-import 'package:lyricapture/data/models/song_model.dart' as _i15;
+import 'package:lyricapture/data/models/song_model.dart' as _i16;
 import 'package:lyricapture/data/models/spotify_token_model.dart' as _i4;
 import 'package:lyricapture/domain/entities/lyrics.dart' as _i3;
 import 'package:lyricapture/domain/entities/song.dart' as _i10;
@@ -23,8 +23,15 @@ import 'package:lyricapture/domain/repositories/image_capture_repository.dart'
     as _i12;
 import 'package:lyricapture/domain/repositories/lyrics_repository.dart' as _i11;
 import 'package:lyricapture/domain/repositories/spotify_repository.dart' as _i8;
+import 'package:lyricapture/domain/usecases/capture_lyrics_to_image.dart'
+    as _i22;
+import 'package:lyricapture/domain/usecases/get_lyrics_from_lrclib.dart'
+    as _i21;
+import 'package:lyricapture/domain/usecases/get_spotify_token.dart' as _i19;
+import 'package:lyricapture/domain/usecases/search_song_on_spotify.dart'
+    as _i20;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i13;
+import 'package:mockito/src/dummies.dart' as _i14;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -247,39 +254,53 @@ class MockImageCaptureRepository extends _i1.Mock
   }
 
   @override
-  _i9.Future<String> captureLyricsToImage(
-    String? lyricsText, {
-    String? songTitle,
-    String? artistName,
-  }) =>
+  _i9.Future<String> saveCapturedImage(
+    _i13.Uint8List? imageBytes,
+    String? fileName,
+  ) =>
       (super.noSuchMethod(
         Invocation.method(
-          #captureLyricsToImage,
-          [lyricsText],
-          {
-            #songTitle: songTitle,
-            #artistName: artistName,
-          },
+          #saveCapturedImage,
+          [
+            imageBytes,
+            fileName,
+          ],
         ),
-        returnValue: _i9.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i9.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
-            #captureLyricsToImage,
-            [lyricsText],
-            {
-              #songTitle: songTitle,
-              #artistName: artistName,
-            },
+            #saveCapturedImage,
+            [
+              imageBytes,
+              fileName,
+            ],
           ),
         )),
       ) as _i9.Future<String>);
+
+  @override
+  _i9.Future<void> shareImage(
+    String? imagePath,
+    String? text,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #shareImage,
+          [
+            imagePath,
+            text,
+          ],
+        ),
+        returnValue: _i9.Future<void>.value(),
+        returnValueForMissingStub: _i9.Future<void>.value(),
+      ) as _i9.Future<void>);
 }
 
 /// A class which mocks [SpotifyRemoteDataSource].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockSpotifyRemoteDataSource extends _i1.Mock
-    implements _i14.SpotifyRemoteDataSource {
+    implements _i15.SpotifyRemoteDataSource {
   MockSpotifyRemoteDataSource() {
     _i1.throwOnMissingStub(this);
   }
@@ -311,7 +332,7 @@ class MockSpotifyRemoteDataSource extends _i1.Mock
       ) as _i9.Future<_i4.SpotifyTokenModel>);
 
   @override
-  _i9.Future<List<_i15.SongModel>> searchSongs(
+  _i9.Future<List<_i16.SongModel>> searchSongs(
     String? query,
     String? token,
   ) =>
@@ -323,15 +344,15 @@ class MockSpotifyRemoteDataSource extends _i1.Mock
             token,
           ],
         ),
-        returnValue: _i9.Future<List<_i15.SongModel>>.value(<_i15.SongModel>[]),
-      ) as _i9.Future<List<_i15.SongModel>>);
+        returnValue: _i9.Future<List<_i16.SongModel>>.value(<_i16.SongModel>[]),
+      ) as _i9.Future<List<_i16.SongModel>>);
 }
 
 /// A class which mocks [LrcLibRemoteDataSource].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockLrcLibRemoteDataSource extends _i1.Mock
-    implements _i16.LrcLibRemoteDataSource {
+    implements _i17.LrcLibRemoteDataSource {
   MockLrcLibRemoteDataSource() {
     _i1.throwOnMissingStub(this);
   }
@@ -417,7 +438,7 @@ class MockClient extends _i1.Mock implements _i6.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i17.Encoding? encoding,
+    _i18.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -448,7 +469,7 @@ class MockClient extends _i1.Mock implements _i6.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i17.Encoding? encoding,
+    _i18.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -479,7 +500,7 @@ class MockClient extends _i1.Mock implements _i6.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i17.Encoding? encoding,
+    _i18.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -510,7 +531,7 @@ class MockClient extends _i1.Mock implements _i6.Client {
     Uri? url, {
     Map<String, String>? headers,
     Object? body,
-    _i17.Encoding? encoding,
+    _i18.Encoding? encoding,
   }) =>
       (super.noSuchMethod(
         Invocation.method(
@@ -547,7 +568,7 @@ class MockClient extends _i1.Mock implements _i6.Client {
           [url],
           {#headers: headers},
         ),
-        returnValue: _i9.Future<String>.value(_i13.dummyValue<String>(
+        returnValue: _i9.Future<String>.value(_i14.dummyValue<String>(
           this,
           Invocation.method(
             #read,
@@ -558,7 +579,7 @@ class MockClient extends _i1.Mock implements _i6.Client {
       ) as _i9.Future<String>);
 
   @override
-  _i9.Future<_i18.Uint8List> readBytes(
+  _i9.Future<_i13.Uint8List> readBytes(
     Uri? url, {
     Map<String, String>? headers,
   }) =>
@@ -568,8 +589,8 @@ class MockClient extends _i1.Mock implements _i6.Client {
           [url],
           {#headers: headers},
         ),
-        returnValue: _i9.Future<_i18.Uint8List>.value(_i18.Uint8List(0)),
-      ) as _i9.Future<_i18.Uint8List>);
+        returnValue: _i9.Future<_i13.Uint8List>.value(_i13.Uint8List(0)),
+      ) as _i9.Future<_i13.Uint8List>);
 
   @override
   _i9.Future<_i6.StreamedResponse> send(_i6.BaseRequest? request) =>
@@ -1342,4 +1363,141 @@ class MockDio extends _i1.Mock implements _i7.Dio {
           ),
         ),
       ) as _i7.Dio);
+}
+
+/// A class which mocks [GetSpotifyToken].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockGetSpotifyToken extends _i1.Mock implements _i19.GetSpotifyToken {
+  MockGetSpotifyToken() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i9.Future<_i2.SpotifyToken> call() => (super.noSuchMethod(
+        Invocation.method(
+          #call,
+          [],
+        ),
+        returnValue: _i9.Future<_i2.SpotifyToken>.value(_FakeSpotifyToken_0(
+          this,
+          Invocation.method(
+            #call,
+            [],
+          ),
+        )),
+      ) as _i9.Future<_i2.SpotifyToken>);
+}
+
+/// A class which mocks [SearchSongOnSpotify].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockSearchSongOnSpotify extends _i1.Mock
+    implements _i20.SearchSongOnSpotify {
+  MockSearchSongOnSpotify() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i9.Future<List<_i10.Song>> call(
+    String? query,
+    String? token,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #call,
+          [
+            query,
+            token,
+          ],
+        ),
+        returnValue: _i9.Future<List<_i10.Song>>.value(<_i10.Song>[]),
+      ) as _i9.Future<List<_i10.Song>>);
+}
+
+/// A class which mocks [GetLyricsFromLrclib].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockGetLyricsFromLrclib extends _i1.Mock
+    implements _i21.GetLyricsFromLrclib {
+  MockGetLyricsFromLrclib() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i9.Future<_i3.Lyrics> call(
+    String? trackName,
+    String? artistName,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #call,
+          [
+            trackName,
+            artistName,
+          ],
+        ),
+        returnValue: _i9.Future<_i3.Lyrics>.value(_FakeLyrics_1(
+          this,
+          Invocation.method(
+            #call,
+            [
+              trackName,
+              artistName,
+            ],
+          ),
+        )),
+      ) as _i9.Future<_i3.Lyrics>);
+}
+
+/// A class which mocks [CaptureLyricsToImage].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockCaptureLyricsToImage extends _i1.Mock
+    implements _i22.CaptureLyricsToImage {
+  MockCaptureLyricsToImage() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  _i9.Future<String> saveImage(
+    _i13.Uint8List? imageBytes,
+    String? fileName,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #saveImage,
+          [
+            imageBytes,
+            fileName,
+          ],
+        ),
+        returnValue: _i9.Future<String>.value(_i14.dummyValue<String>(
+          this,
+          Invocation.method(
+            #saveImage,
+            [
+              imageBytes,
+              fileName,
+            ],
+          ),
+        )),
+      ) as _i9.Future<String>);
+
+  @override
+  _i9.Future<void> shareImage(
+    String? imagePath,
+    String? text,
+  ) =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #shareImage,
+          [
+            imagePath,
+            text,
+          ],
+        ),
+        returnValue: _i9.Future<void>.value(),
+        returnValueForMissingStub: _i9.Future<void>.value(),
+      ) as _i9.Future<void>);
 }

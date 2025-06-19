@@ -1,5 +1,6 @@
 import 'dart:convert'; // For base64Encode, utf8
 import 'package:dio/dio.dart';
+import 'package:injectable/injectable.dart'; // Added injectable
 import 'package:lyricapture/data/models/spotify_token_model.dart';
 import 'package:lyricapture/data/models/song_model.dart';
 
@@ -8,6 +9,7 @@ abstract class SpotifyRemoteDataSource {
   Future<List<SongModel>> searchSongs(String query, String token);
 }
 
+@LazySingleton(as: SpotifyRemoteDataSource) // Added annotation
 class SpotifyRemoteDataSourceImpl implements SpotifyRemoteDataSource {
   final Dio _dio;
   // Base URLs are not strictly needed here as full URLs are used in methods.

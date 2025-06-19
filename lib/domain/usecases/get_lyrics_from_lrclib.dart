@@ -1,8 +1,14 @@
+import 'package:injectable/injectable.dart';
 import 'package:lyricapture/domain/entities/lyrics.dart';
 import 'package:lyricapture/domain/repositories/lyrics_repository.dart';
 
+@lazySingleton
 class GetLyricsFromLrclib {
-  Future<Lyrics> call(LyricsRepository repository, String trackName, String artistName) {
-    return repository.getLyrics(trackName, artistName);
+  final LyricsRepository _repository;
+
+  GetLyricsFromLrclib(this._repository);
+
+  Future<Lyrics> call(String trackName, String artistName) {
+    return _repository.getLyrics(trackName, artistName);
   }
 }

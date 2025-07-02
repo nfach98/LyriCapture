@@ -9,9 +9,9 @@ class CaptureLyricsToImage {
   CaptureLyricsToImage(this._repository);
 
   // Method to save the image, returns the file path
-  Future<String> saveImage(Uint8List imageBytes, String fileName) {
-    return _repository.saveCapturedImage(imageBytes, fileName);
-  }
+  // Future<String> saveImage(Uint8List imageBytes, String fileName) {
+  //   return _repository.saveCapturedImage(imageBytes, fileName);
+  // }
 
   // Method to share the image
   Future<void> shareImage(String imagePath, String text) {

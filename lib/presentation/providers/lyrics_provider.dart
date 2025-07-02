@@ -6,50 +6,85 @@ import 'package:lyricapture/domain/usecases/capture_lyrics_to_image.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-@injectable // Added annotation
+@injectable
 class LyricsProvider extends ChangeNotifier {
-  final GetLyricsFromLrclib _getLyricsFromLrclib; // Changed to _
+  final GetLyricsFromLrclib _getLyricsFromLrclib;
   final CaptureLyricsToImage _captureLyricsToImage;
 
-  ScreenshotController screenshotController = ScreenshotController();
+  final screenshotController = ScreenshotController();
 
   bool _isLoading = false;
   Lyrics? _lyrics;
   String? _error;
-  final Set<String> _selectedLyricsLines = {};
+  final _selectedLineIndexes = <int>[];
+  int? _backgroundColor;
 
   LyricsProvider({
-    required GetLyricsFromLrclib getLyricsFromLrclib, // Constructor updated
+    required GetLyricsFromLrclib getLyricsFromLrclib,
     required CaptureLyricsToImage captureLyricsToImage,
-    // required LyricsRepository lyricsRepository, // Removed
   })  : _getLyricsFromLrclib = getLyricsFromLrclib,
         _captureLyricsToImage = captureLyricsToImage;
-  // _lyricsRepository = lyricsRepository; // Removed
 
   bool get isLoading => _isLoading;
   Lyrics? get lyrics => _lyrics;
   String? get error => _error;
-  Set<String> get selectedLyricsLines => _selectedLyricsLines;
-  String get selectedLyricsText => _selectedLyricsLines.join('\n');
 
-  void toggleLyricLineSelection(String line) {
-    if (_selectedLyricsLines.contains(line)) {
-      _selectedLyricsLines.remove(line);
+  List<int> get selectedLineIndexes => _selectedLineIndexes;
+  String get selectedLyricsText => _selectedLineIndexes.join('\n');
+
+  int get backgroundColor => _backgroundColor ?? 0xFF000000;
+
+  void toggleLyricLineSelection(int index) {
+    final firstIndex = _selectedLineIndexes.firstOrNull ?? index + 1;
+    final lastIndex = _selectedLineIndexes.lastOrNull ?? index - 1;
+
+    if (_selectedLineIndexes.contains(index)) {
+      if (firstIndex == index || lastIndex == index) {
+        _selectedLineIndexes.remove(index);
+      }
+      /*  else {
+        if (index > firstIndex) {
+          _selectedLineIndexes.removeWhere((e) => e <= index);
+        } else if (index < lastIndex) {
+          _selectedLineIndexes.removeWhere((e) => e >= index);
+        }
+      } */
     } else {
-      _selectedLyricsLines.add(line);
+      if (_selectedLineIndexes.isEmpty) {
+        _selectedLineIndexes.add(index);
+      } else {
+        if (index < firstIndex) {
+          _selectedLineIndexes
+              .addAll(List.generate(firstIndex - index, (i) => index + i));
+        } else if (index > lastIndex) {
+          _selectedLineIndexes.addAll(
+              List.generate(index - lastIndex, (i) => lastIndex + i + 1));
+        }
+      }
     }
+    _selectedLineIndexes.sort((a, b) => a.compareTo(b));
     notifyListeners();
   }
 
   void clearSelectedLyrics() {
-    _selectedLyricsLines.clear();
+    _selectedLineIndexes.clear();
     notifyListeners();
   }
 
-  Future<void> fetchLyrics(String trackName, String artistName) async {
+  void setBackgroundColor(int color) {
+    _backgroundColor = color;
+    notifyListeners();
+  }
+
+  Future<void> fetchLyrics({
+    required String track,
+    required String artist,
+  }) async {
+    if (_isLoading) return;
+
     clearSelectedLyrics();
-    if (trackName.isEmpty || artistName.isEmpty) {
-      _error = "Track name and artist name cannot be empty.";
+    if (track.isEmpty || artist.isEmpty) {
+      _error = 'Track name and artist name cannot be empty.';
       notifyListeners();
       return;
     }
@@ -59,12 +94,10 @@ class LyricsProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // Use case call doesn't need repository passed here anymore
-      _lyrics = await _getLyricsFromLrclib.call(trackName, artistName);
+      _lyrics = await _getLyricsFromLrclib.call(track, artist);
       if (_lyrics?.plainLyrics == null && _lyrics?.syncedLyrics == null) {
-        // If lyrics content is empty/null after successful fetch.
-        _error = "No lyrics content found for this track.";
-        _lyrics = null; // Ensure lyrics is null if content is not there
+        _error = 'No lyrics content found for this track.';
+        _lyrics = null;
       }
     } catch (e) {
       _error = 'Failed to fetch lyrics: $e';
@@ -75,7 +108,9 @@ class LyricsProvider extends ChangeNotifier {
   }
 
   Future<String?> captureAndSaveLyrics(
-      String songTitle, String artistName) async {
+    String songTitle,
+    String artistName,
+  ) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -86,19 +121,19 @@ class LyricsProvider extends ChangeNotifier {
     } else if (defaultTargetPlatform == TargetPlatform.iOS) {
       status = await Permission.photos.request();
     } else {
-      _error = "Platform not supported for image saving.";
+      _error = 'Platform not supported for image saving.';
       _isLoading = false;
       notifyListeners();
       return null;
     }
 
     if (status.isGranted) {
-      try {
+      /* try {
         final Uint8List? imageBytes = await screenshotController.capture();
 
         if (imageBytes != null) {
           final fileName =
-              "${songTitle.replaceAll(' ', '_').replaceAll(r'[^\w\s]+', '_')}_lyrics.png";
+              '${songTitle.replaceAll(' ', '_').replaceAll(r'[^\w\s]+', '_')}_lyrics.png';
           // Use the injected use case to save the image
           final String filePath =
               await _captureLyricsToImage.saveImage(imageBytes, fileName);
@@ -115,7 +150,7 @@ class LyricsProvider extends ChangeNotifier {
         }
       } catch (e) {
         _error = 'Error during capture/save: $e';
-      }
+      } */
     } else {
       _error = 'Storage/Photos permission denied. Status: $status';
     }

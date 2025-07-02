@@ -1,5 +1,3 @@
-import 'package:flutter/foundation.dart';
-
 class SpotifyToken {
   final String accessToken;
   final String tokenType;
@@ -39,5 +37,6 @@ class SpotifyToken {
   }
 
   @override
-  int get hashCode => accessToken.hashCode ^ tokenType.hashCode ^ expiresIn.hashCode;
+  int get hashCode =>
+      accessToken.hashCode ^ tokenType.hashCode ^ expiresIn.hashCode;
 }

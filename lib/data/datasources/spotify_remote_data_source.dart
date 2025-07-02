@@ -1,48 +1,51 @@
-import 'dart:convert'; // For base64Encode, utf8
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart'; // Added injectable
 import 'package:lyricapture/data/models/spotify_token_model.dart';
 import 'package:lyricapture/data/models/song_model.dart';
 
 abstract class SpotifyRemoteDataSource {
-  Future<SpotifyTokenModel> getToken(String clientId, String clientSecret);
+  Future<SpotifyTokenModel> getToken({
+    required String clientId,
+    required String clientSecret,
+  });
   Future<List<SongModel>> searchSongs(String query, String token);
 }
 
-@LazySingleton(as: SpotifyRemoteDataSource) // Added annotation
+@LazySingleton(as: SpotifyRemoteDataSource)
 class SpotifyRemoteDataSourceImpl implements SpotifyRemoteDataSource {
   final Dio _dio;
-  // Base URLs are not strictly needed here as full URLs are used in methods.
-  // final String _spotifyApiBaseUrl = 'https://api.spotify.com/v1';
-  // final String _spotifyAccountsBaseUrl = 'https://accounts.spotify.com/api';
-
 
   SpotifyRemoteDataSourceImpl({required Dio dio}) : _dio = dio;
 
   @override
-  Future<SpotifyTokenModel> getToken(String clientId, String clientSecret) async {
-    final String basicAuth = 'Basic ${base64Encode(utf8.encode('$clientId:$clientSecret'))}';
+  Future<SpotifyTokenModel> getToken({
+    required String clientId,
+    required String clientSecret,
+  }) async {
     try {
       final response = await _dio.post(
         'https://accounts.spotify.com/api/token', // Full URL
-        data: {'grant_type': 'client_credentials'},
+        data: {
+          'grant_type': 'client_credentials',
+          'client_id': clientId,
+          'client_secret': clientSecret,
+        },
         options: Options(
           headers: {
-            'Authorization': basicAuth,
             'Content-Type': 'application/x-www-form-urlencoded',
           },
         ),
       );
 
       if (response.statusCode == 200 && response.data != null) {
-        // Dio automatically decodes JSON, so response.data is already a Map<String, dynamic>
         return SpotifyTokenModel.fromJson(response.data);
       } else {
-        throw Exception('Failed to get Spotify token: Status ${response.statusCode}, Data: ${response.data}');
+        throw Exception(
+          'Failed to get Spotify token: Status ${response.statusCode}, Data: ${response.data}',
+        );
       }
     } on DioException catch (e) {
-      // Handle Dio-specific errors
-      String errorMessage = 'Failed to get Spotify token (DioError): ${e.message}';
+      var errorMessage = 'Failed to get Spotify token (DioError): ${e.message}';
       if (e.response != null) {
         errorMessage += '\nResponse Data: ${e.response?.data}';
         errorMessage += '\nStatus Code: ${e.response?.statusCode}';
@@ -71,13 +74,16 @@ class SpotifyRemoteDataSourceImpl implements SpotifyRemoteDataSource {
       if (response.statusCode == 200 && response.data != null) {
         // Dio automatically decodes JSON
         final List<dynamic> trackItems = response.data['tracks']['items'];
-        return trackItems.map((item) => SongModel.fromJson(item as Map<String, dynamic>)).toList();
+        return trackItems
+            .map((item) => SongModel.fromJson(item as Map<String, dynamic>))
+            .toList();
       } else {
-        throw Exception('Failed to search songs: Status ${response.statusCode}, Data: ${response.data}');
+        throw Exception(
+            'Failed to search songs: Status ${response.statusCode}, Data: ${response.data}');
       }
     } on DioException catch (e) {
       String errorMessage = 'Failed to search songs (DioError): ${e.message}';
-       if (e.response != null) {
+      if (e.response != null) {
         errorMessage += '\nResponse Data: ${e.response?.data}';
         errorMessage += '\nStatus Code: ${e.response?.statusCode}';
       }

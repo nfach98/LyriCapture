@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:lyricapture/domain/entities/song.dart';
+import 'package:lyricapture/presentation/arguments/capture_argument.dart';
+import 'package:lyricapture/presentation/screens/capture_screen.dart';
 import 'package:lyricapture/presentation/screens/search_screen.dart';
 import 'package:lyricapture/presentation/screens/lyrics_screen.dart';
 
 class AppRouter {
   static const search = 'search';
   static const lyrics = 'lyrics';
+  static const capture = 'capture';
 
   static final GoRouter router = GoRouter(
     initialLocation: '/',
@@ -14,29 +17,38 @@ class AppRouter {
       GoRoute(
         path: '/',
         name: search,
-        builder: (BuildContext context, GoRouterState state) {
-          return const SongSearchScreen();
-        },
+        builder: (context, state) => const SearchScreen(),
       ),
       GoRoute(
         path: '/lyrics',
         name: lyrics,
-        builder: (BuildContext context, GoRouterState state) {
-          // Retrieve the Song object passed as 'extra'
-          // Make sure to handle the case where extra might not be a Song or is null,
-          // though for this specific navigation, we expect it.
+        builder: (context, state) {
           if (state.extra is Song) {
-            final Song song = state.extra as Song;
+            final song = state.extra as Song;
             return LyricsScreen(song: song);
           } else {
-            // Handle error or return a fallback widget if 'extra' is not a Song.
-            // This could be navigating back or showing an error message.
-            // For now, let's assume 'extra' will always be a valid Song object when navigating to this route.
-            // Or, provide a sensible default or error screen.
             return Scaffold(
               appBar: AppBar(title: const Text('Error')),
               body: const Center(
-                  child: Text('Error: Song data not provided correctly.')),
+                child: Text('Error: Song data not provided correctly.'),
+              ),
+            );
+          }
+        },
+      ),
+      GoRoute(
+        path: '/capture',
+        name: capture,
+        builder: (context, state) {
+          if (state.extra is CaptureArgument) {
+            final args = state.extra as CaptureArgument;
+            return CaptureScreen(args: args);
+          } else {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Error')),
+              body: const Center(
+                child: Text('Error: Song data not provided correctly.'),
+              ),
             );
           }
         },

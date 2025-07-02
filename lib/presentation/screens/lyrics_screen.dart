@@ -1,7 +1,13 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:go_router/go_router.dart';
 import 'package:lyricapture/domain/entities/song.dart';
+import 'package:lyricapture/presentation/arguments/capture_argument.dart';
+import 'package:lyricapture/presentation/navigation/app_router.dart';
 import 'package:lyricapture/presentation/providers/lyrics_provider.dart';
-import 'package:lyricapture/presentation/widgets/captured_lyrics_widget.dart';
+import 'package:lyricapture/utils/color_extension.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:provider/provider.dart';
 
 class LyricsScreen extends StatefulWidget {
@@ -14,119 +20,252 @@ class LyricsScreen extends StatefulWidget {
 }
 
 class _LyricsScreenState extends State<LyricsScreen> {
-  // GlobalKey for the Screenshot widget is not needed here if
-  // the ScreenshotController is instance-level in the Provider.
-  // final GlobalKey _lyricsCaptureKey = GlobalKey();
-
   @override
   void initState() {
     super.initState();
-    // Fetch lyrics when the screen is initialized
-    // Ensure context is available and mounted before trying to read provider
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        Provider.of<LyricsProvider>(context, listen: false)
-            .fetchLyrics(widget.song.name, widget.song.artistName);
-      }
+      _getLyrics();
+      _getBackgroundColor();
     });
+  }
+
+  _getLyrics() {
+    context.read<LyricsProvider>().fetchLyrics(
+          track: widget.song.name,
+          artist: widget.song.artistName,
+        );
+  }
+
+  Future<void> _getBackgroundColor() async {
+    final palette = await PaletteGenerator.fromImageProvider(
+      CachedNetworkImageProvider(widget.song.albumArtUrl ?? ''),
+      targets: [PaletteTarget.darkVibrant],
+    );
+
+    final colors = palette.selectedSwatches.values.map((e) => e.color).toList();
+    if (colors.isNotEmpty && mounted) {
+      context.read<LyricsProvider>().setBackgroundColor(colors.first.value);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final song = widget.song;
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.song.name),
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              widget.song.name,
-              style: Theme.of(context).textTheme.headlineSmall,
+              song.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.titleSmall,
             ),
             Text(
-              widget.song.artistName,
-              style: Theme.of(context).textTheme.titleMedium,
+              song.artistName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall,
             ),
-            if (widget.song.albumName.isNotEmpty)
-              Text(
-                widget.song.albumName,
-                style: Theme.of(context).textTheme.bodySmall,
-              ),
-            const SizedBox(height: 20),
-            Expanded(
-              child: Consumer<LyricsProvider>(
-                builder: (context, lyricsProvider, child) {
-                  if (lyricsProvider.isLoading &&
-                      lyricsProvider.lyrics == null) {
-                    // Show loading only if lyrics are not yet loaded
-                    return const Center(child: CircularProgressIndicator());
-                  }
-                  if (lyricsProvider.error != null &&
-                      lyricsProvider.lyrics == null) {
-                    // Show error only if lyrics are not yet loaded
-                    return Center(
-                        child: Text('Error: ${lyricsProvider.error}'));
-                  }
-                  if (lyricsProvider.lyrics == null ||
-                      (lyricsProvider.lyrics?.plainLyrics == null &&
-                          lyricsProvider.lyrics?.syncedLyrics == null)) {
-                    return const Center(
-                        child: Text('No lyrics available for this song.'));
-                  }
+          ],
+        ),
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Consumer<LyricsProvider>(
+              builder: (_, provider, __) {
+                if (provider.isLoading && provider.lyrics == null) {
+                  return const Center(
+                    child: CircularProgressIndicator(),
+                  );
+                }
+                if (provider.error != null && provider.lyrics == null) {
+                  return Center(
+                    child: Text('Error: ${provider.error}'),
+                  );
+                }
+                if (provider.lyrics == null ||
+                    (provider.lyrics?.plainLyrics == null &&
+                        provider.lyrics?.syncedLyrics == null)) {
+                  return const Center(
+                    child: Text('No lyrics available for this song.'),
+                  );
+                }
 
-                  final String? lyricsContent =
-                      lyricsProvider.lyrics?.plainLyrics ??
-                          lyricsProvider.lyrics?.syncedLyrics;
-                  if (lyricsContent == null || lyricsContent.trim().isEmpty) {
-                    return const Center(
-                        child: Text('Lyrics content is empty.'));
-                  }
+                final lyricsContent = provider.lyrics?.plainLyrics ??
+                    provider.lyrics?.syncedLyrics;
+                if (lyricsContent == null || lyricsContent.trim().isEmpty) {
+                  return const Center(child: Text('Lyrics content is empty.'));
+                }
 
-                  final lines = lyricsContent.split('\n');
+                final lines = lyricsContent.split('\n');
+                lines.removeWhere((line) => line.trim().isEmpty);
+                final selectedLineIndexes = provider.selectedLineIndexes;
+                final firstSelected = selectedLineIndexes.firstOrNull ?? -1;
+                final lastSelected = selectedLineIndexes.lastOrNull ?? -1;
 
-                  return Column(
-                    children: [
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: lines.length,
-                          itemBuilder: (context, index) {
-                            final line = lines[index];
-                            final isSelected = lyricsProvider
-                                .selectedLyricsLines
-                                .contains(line);
-                            return InkWell(
-                              onTap: () {
-                                lyricsProvider.toggleLyricLineSelection(line);
-                              },
-                              child: Container(
-                                color: isSelected
-                                    ? Colors.blue.withOpacity(0.3)
-                                    : Colors.transparent,
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: 8.0, horizontal: 16.0),
-                                child: Text(
-                                  line,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .bodyMedium
-                                      ?.copyWith(
-                                        backgroundColor: isSelected
-                                            ? Colors.blue.withOpacity(0.1)
-                                            : null,
+                final backgroundColor = Color(provider.backgroundColor);
+                final backgroundLuminance = backgroundColor.luminance;
+                final foregroundColor =
+                    backgroundLuminance > 0.5 ? Colors.black87 : Colors.white;
+
+                final selectedColor =
+                    backgroundLuminance > 0.5 ? Colors.black54 : Colors.white70;
+                final selectedTextColor =
+                    backgroundLuminance > 0.5 ? Colors.white : Colors.black87;
+
+                return Column(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.all(10),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Stack(
+                            children: [
+                              /* Positioned.fill(
+                                child: CachedNetworkImage(
+                                  imageUrl: song.albumArtUrl ?? '',
+                                  width: 40,
+                                  height: 40,
+                                  fit: BoxFit.cover,
+                                  errorWidget: (_, __, ___) => Container(
+                                    width: 40,
+                                    height: 40,
+                                    color: theme.colorScheme.surfaceContainer,
+                                    child: const Center(
+                                      child: Icon(Icons.music_note),
+                                    ),
+                                  ),
+                                ),
+                              ), */
+                              Positioned.fill(
+                                child: Container(color: backgroundColor),
+                              ),
+                              /* Positioned.fill(
+                                child: BackdropFilter(
+                                  filter: ImageFilter.blur(
+                                    sigmaX: 6,
+                                    sigmaY: 6,
+                                  ),
+                                  child: Container(
+                                    color: Colors.black.withOpacity(.16),
+                                  ),
+                                ),
+                              ), */
+                              Positioned.fill(
+                                child: ListView.builder(
+                                  padding: const EdgeInsets.fromLTRB(
+                                    16,
+                                    10,
+                                    16,
+                                    64,
+                                  ),
+                                  itemCount: lines.length,
+                                  itemBuilder: (_, index) {
+                                    final isSelected =
+                                        selectedLineIndexes.contains(index);
+
+                                    return InkWell(
+                                      onTap: () {
+                                        provider.toggleLyricLineSelection(
+                                          index,
+                                        );
+                                      },
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 6,
+                                          horizontal: 10,
+                                        ),
+                                        decoration: BoxDecoration(
+                                            color: isSelected
+                                                ? selectedColor
+                                                : null,
+                                            borderRadius: BorderRadius.vertical(
+                                              top: Radius.circular(
+                                                index == firstSelected ? 16 : 0,
+                                              ),
+                                              bottom: Radius.circular(
+                                                index == lastSelected ? 16 : 0,
+                                              ),
+                                            )),
+                                        child: Text(
+                                          lines[index],
+                                          style: theme.textTheme.headlineSmall
+                                              ?.copyWith(
+                                            color: isSelected
+                                                ? selectedTextColor
+                                                : foregroundColor,
+                                          ),
+                                        ),
                                       ),
+                                    );
+                                  },
                                 ),
                               ),
-                            );
-                          },
+                              if (selectedLineIndexes.isNotEmpty)
+                                Positioned(
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(10),
+                                    child: Row(
+                                      children: [
+                                        ElevatedButton.icon(
+                                          onPressed: () {
+                                            context
+                                                .read<LyricsProvider>()
+                                                .clearSelectedLyrics();
+                                          },
+                                          label: const Icon(Icons.replay),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: ElevatedButton.icon(
+                                            onPressed: () {
+                                              final selectedLines = <String>[];
+                                              for (var i = 0;
+                                                  i < lines.length;
+                                                  i++) {
+                                                if (selectedLineIndexes
+                                                    .contains(i)) {
+                                                  selectedLines.add(lines[i]);
+                                                }
+                                              }
+
+                                              context.pushNamed(
+                                                AppRouter.capture,
+                                                extra: CaptureArgument(
+                                                  song: song,
+                                                  lyrics: selectedLines,
+                                                  backgroundColor:
+                                                      backgroundColor,
+                                                ),
+                                              );
+                                            },
+                                            icon: const Icon(Icons.camera_alt),
+                                            label: const Text('Capture'),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                      // This Screenshot widget is for capturing the selected lyrics.
-                      // It's always in the tree but only visible if there are selected lines.
-                      // The actual content to be captured is defined by CapturedLyricsWidget.
-                      /*  if (lyricsProvider.selectedLyricsLines.isNotEmpty)
+                    ),
+                    // This Screenshot widget is for capturing the selected lyrics.
+                    // It's always in the tree but only visible if there are selected lines.
+                    // The actual content to be captured is defined by CapturedLyricsWidget.
+                    /*  if (lyricsProvider.selectedLyricsLines.isNotEmpty)
                         Offstage( // Use Offstage to have it in the tree for capture but not visible until needed
                           offstage: true, // This should ideally be false when capturing, or simply remove it for capture
                                           // For simplicity, we'll have it in the tree, capture will grab it.
@@ -141,65 +280,12 @@ class _LyricsScreenState extends State<LyricsScreen> {
                             ),
                           ),
                         ), */
-                      if (lyricsProvider.selectedLyricsLines.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: ElevatedButton(
-                            onPressed: lyricsProvider.isLoading
-                                ? null
-                                : () async {
-                                    // Disable button when loading
-                                    if (lyricsProvider
-                                        .selectedLyricsLines.isNotEmpty) {
-                                      final successPath = await lyricsProvider
-                                          .captureAndSaveLyrics(
-                                        widget.song.name,
-                                        widget.song.artistName,
-                                      );
-                                      if (mounted) {
-                                        // Check if the widget is still in the tree
-                                        if (successPath != null) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                                content: Text(
-                                                    'Lyrics captured and shared! Saved at $successPath')),
-                                          );
-                                        } else if (lyricsProvider.error !=
-                                            null) {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            SnackBar(
-                                                content: Text(
-                                                    'Error: ${lyricsProvider.error}')),
-                                          );
-                                        } else {
-                                          ScaffoldMessenger.of(context)
-                                              .showSnackBar(
-                                            const SnackBar(
-                                                content: Text(
-                                                    'Capture/Save failed for an unknown reason.')),
-                                          );
-                                        }
-                                      }
-                                    }
-                                  },
-                            child: lyricsProvider.isLoading
-                                ? const SizedBox(
-                                    height: 20,
-                                    width: 20,
-                                    child: CircularProgressIndicator(
-                                        strokeWidth: 2, color: Colors.white))
-                                : const Text('Capture Selected Lyrics'),
-                          ),
-                        ),
-                    ],
-                  );
-                },
-              ),
+                  ],
+                );
+              },
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

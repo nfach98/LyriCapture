@@ -4,29 +4,28 @@ import 'package:lyricapture/domain/entities/song.dart';
 import 'package:lyricapture/domain/repositories/spotify_repository.dart';
 import 'package:lyricapture/data/datasources/spotify_remote_data_source.dart';
 
-// TODO: Replace with your actual client ID and secret
-// These constants are used by the repository itself, not directly injected for now.
-const String _spotifyClientId = 'YOUR_SPOTIFY_CLIENT_ID';
-const String _spotifyClientSecret = 'YOUR_SPOTIFY_CLIENT_SECRET';
+const String _spotifyClientId = 'a86085f7a2bf48f192a6c6cbaf14e25e';
+const String _spotifyClientSecret = 'c0a6931e2ac6464bb099c1aca0ddea41';
 
-@LazySingleton(as: SpotifyRepository) // Added annotation
+@LazySingleton(as: SpotifyRepository)
 class SpotifyRepositoryImpl implements SpotifyRepository {
-  final SpotifyRemoteDataSource _remoteDataSource; // Changed to _remoteDataSource for convention
+  final SpotifyRemoteDataSource _remoteDataSource;
 
-  // Constructor updated to match the new field name if changed, and for DI
-  SpotifyRepositoryImpl({required SpotifyRemoteDataSource remoteDataSource})
-      : _remoteDataSource = remoteDataSource;
+  SpotifyRepositoryImpl({
+    required SpotifyRemoteDataSource remoteDataSource,
+  }) : _remoteDataSource = remoteDataSource;
 
   @override
   Future<SpotifyToken> getToken() async {
-    // Using the field _remoteDataSource now
-    final spotifyTokenModel = await _remoteDataSource.getToken(_spotifyClientId, _spotifyClientSecret);
+    final spotifyTokenModel = await _remoteDataSource.getToken(
+      clientId: _spotifyClientId,
+      clientSecret: _spotifyClientSecret,
+    );
     return spotifyTokenModel.toDomain();
   }
 
   @override
   Future<List<Song>> searchSongs(String query, String token) async {
-    // Using the field _remoteDataSource now
     final songModels = await _remoteDataSource.searchSongs(query, token);
     return songModels.map((model) => model.toDomain()).toList();
   }

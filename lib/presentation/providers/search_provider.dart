@@ -7,23 +7,22 @@ import 'package:lyricapture/domain/usecases/search_song_on_spotify.dart';
 // import 'package:lyricapture/domain/repositories/spotify_repository.dart'; // No longer needed if use cases are used
 
 @injectable // Added annotation
-class SongSearchProvider extends ChangeNotifier {
-  final GetSpotifyToken _getSpotifyToken; // Changed to _ and private convention
-  final SearchSongOnSpotify _searchSongOnSpotify; // Changed to _ and private convention
-  // final SpotifyRepository _spotifyRepository; // Removed if not directly used
+class SearchProvider extends ChangeNotifier {
+  final GetSpotifyToken _getSpotifyToken;
+  final SearchSongOnSpotify _searchSongOnSpotify;
 
   bool _isLoading = false;
   List<Song> _songs = [];
   String? _error;
   SpotifyToken? _spotifyToken; // Renamed for consistency
 
-  SongSearchProvider({
+  SearchProvider({
     required GetSpotifyToken getSpotifyToken, // Constructor params updated
     required SearchSongOnSpotify searchSongOnSpotify,
     // required SpotifyRepository spotifyRepository, // Removed
   })  : _getSpotifyToken = getSpotifyToken,
         _searchSongOnSpotify = searchSongOnSpotify;
-        // _spotifyRepository = spotifyRepository; // Removed
+  // _spotifyRepository = spotifyRepository; // Removed
 
   bool get isLoading => _isLoading;
   List<Song> get songs => _songs;
@@ -68,16 +67,25 @@ class SongSearchProvider extends ChangeNotifier {
 
     try {
       await _fetchTokenIfNeeded();
-      if (_spotifyToken == null) { // Check internal _spotifyToken
+      if (_spotifyToken == null) {
+        // Check internal _spotifyToken
         throw Exception("Spotify token is not available.");
       }
       // Use case call for searchSongOnSpotify
-      _songs = await _searchSongOnSpotify.call(query, _spotifyToken!.accessToken);
+      _songs =
+          await _searchSongOnSpotify.call(query, _spotifyToken!.accessToken);
     } catch (e) {
       _error = 'Search failed: $e';
     } finally {
       _isLoading = false;
       notifyListeners();
     }
+  }
+
+  Future<void> reset() async {
+    _isLoading = false;
+    _songs = [];
+    _error = null;
+    notifyListeners();
   }
 }

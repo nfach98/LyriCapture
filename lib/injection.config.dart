@@ -28,7 +28,7 @@ import 'domain/usecases/get_lyrics_from_lrclib.dart' as _i219;
 import 'domain/usecases/get_spotify_token.dart' as _i799;
 import 'domain/usecases/search_song_on_spotify.dart' as _i608;
 import 'presentation/providers/lyrics_provider.dart' as _i480;
-import 'presentation/providers/song_search_provider.dart' as _i527;
+import 'presentation/providers/search_provider.dart' as _i527;
 
 // initializes the registration of main-scope dependencies inside of GetIt
 _i174.GetIt $initGetIt(
@@ -66,7 +66,7 @@ _i174.GetIt $initGetIt(
       () => _i608.SearchSongOnSpotify(gh<_i69.SpotifyRepository>()));
   gh.lazySingleton<_i799.GetSpotifyToken>(
       () => _i799.GetSpotifyToken(gh<_i69.SpotifyRepository>()));
-  gh.factory<_i527.SongSearchProvider>(() => _i527.SongSearchProvider(
+  gh.factory<_i527.SearchProvider>(() => _i527.SearchProvider(
         getSpotifyToken: gh<_i799.GetSpotifyToken>(),
         searchSongOnSpotify: gh<_i608.SearchSongOnSpotify>(),
       ));
